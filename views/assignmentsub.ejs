@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  	<title>Student Record</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,700' rel='stylesheet' type='text/css'>
+
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	
+	<link rel="stylesheet" href="/table/css/style.css">
+
+	</head>
+	<body>
+	<section class="ftco-section">
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-md-6 text-center mb-4">
+					<h2 class="heading-section">Assignments Submmision</h2>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-12">
+					<div class="table-wrap">
+						<table class="table">
+						  <thead class="thead-primary">
+						    <tr>
+						    	<th>S.no.</th>
+						    	<th>Student Id</th>
+						      <th>Assignment Id</th>
+						      <th>Faculty</th>
+						      <th>Date of Submmision</th>
+						      <th>Marks</th>
+						      <th>File</th>
+						      <th>Upload Marks</th>
+						    </tr>
+						  </thead>
+						  <tbody>
+						    <tr class="alert" role="alert">
+						      
+                    <% data.map((item,index)=>{%>
+                      <td><%=item.order%></td>
+                      <td>
+                      <div >
+						    <span><%=item.studentid%> </span>
+						      	</div>
+						      </td>
+						      <td >
+					        	<div>
+				             	<span><%=item.assignmentid%></span>
+				          	</div>
+				          </td>
+						      <td >
+					        	<div>
+									<%if(item.faculty!=null){%>
+				             	<span><%=item.faculty%></span>
+								 <%}else{%>
+									<span>Faculty Delete This</span>
+									<%}%>
+				          	</div>
+				          </td>
+						  <%if(item.marks==0){var p="Upload";var q="Not Given"}
+						 else{p="Update";q=item.marks}%> 
+				          <td><%=item.dateofsubmmision%></td>
+				          <td><%=q%></td>
+				          <td><a href="/images/<%=item.picture%>"><%=item.picture%></a></td>
+						  <td><a href="/assignment/marks?a=<%=item.order%>"><%=p%> marks</a></td>
+						    </tr>
+                        <%})%>
+						  </tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<script src="/table/js/jquery.min.js"></script>
+  <script src="/table/js/popper.js"></script>
+  <script src="/table/js/bootstrap.min.js"></script>
+  <script src="/table/js/main.js"></script>
+
+	</body>
+</html>
+

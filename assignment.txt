@@ -1,0 +1,507 @@
+var express=require('express')
+const pool=require('./mysqlconnection')
+const upload=require('./upload')
+const fs=require('fs')
+const Cryptr = require('cryptr');
+const cryptr = new Cryptr('myTotalySecretKey');
+var LocalStorage = require('node-localstorage').LocalStorage;
+localStorage = new LocalStorage('./scratch');
+var router=express.Router()
+router.get('/logout',function(req,res){
+    localStorage.clear()
+    res.redirect('/assignment/Login')
+})
+router.get('/signUp',function(req,res){
+    res.render('signup')
+})
+router.get('/Login',function(req,res){
+    res.render('login',{status:true});
+})
+router.get('/adminprofile',function(req,res){
+    var a=localStorage.getItem('admin')
+    if(a){
+    res.render('adminprofile',{data:JSON.parse(a)})}
+    else{
+        res.redirect('/assignment/Login')
+    }
+})
+router.get('/studentdeatils',function(req,res){
+    var a=localStorage.getItem('admin')
+    if(a){
+        pool.query('select u.*,(select count(s.order) from submmision s where s.studentid=u.id ) as number from user u',function(error,result){
+            if(error){
+                console.log(error)
+                res.redirect('/adminprofile')
+            }
+            else{
+                    res.render('students',{data:result})
+                // result.map((item,index)=>{
+                //     // console.log(item)
+                //     pool.query('select assignmentid from submmision where studentid=?',[item.id],function(error,result1){
+                //         if(error){
+                //             console.log(error)
+                //         }
+                //         else{
+                //             result[index]['number']=result1.length
+                //         }
+                //         if(result.length==index+1){
+                //             res.render('students',{data:result})
+                //         }
+                //         // console.log(result)
+                //     })
+                // })
+            }
+        })
+
+    }
+    else{
+        res.redirect('/assignment/Login')
+    }
+})
+router.get('/assignmentdetails',function(req,res){
+    var a=JSON.parse(localStorage.getItem('admin'))
+    if(a){
+        pool.query('select * from assignment where(faculty=?)',[a.name],function(error,result){
+            if(error){
+                console.log(error)
+                res.redirect('/adminprofile')
+            }
+            else{
+                res.render('assignment',{data:result})
+            }
+        })
+
+    }
+    else{
+        res.redirect('/assignment/Login')
+    }
+})
+router.get('/submmision',function(req,res){
+    var a=JSON.parse(localStorage.getItem('admin'))
+    if(a){
+        pool.query('select s.order,s.assignmentid,s.studentid,s.picture,s.dateofsubmmision,c.faculty from submmision s,assignment c where(s.assignmentid=c.id and c.faculty=?)',[a.name],function(error,result){
+            if(error){
+                console.log(error)
+                res.redirect('/adminprofile')
+            }
+            else{
+                res.render('assignmentsub',{data:result})
+            }
+        })
+
+    }
+    else{
+        res.redirect('/assignment/Login')
+    }
+})
+router.get('/delete',function(req,res){
+    var a=JSON.parse(localStorage.getItem('admin'))
+    if(a){
+        pool.query('delete from user where(id=?)',[req.query.b],function(error,result){
+            console.log(error)
+            res.redirect('/assignment/studentdeatils')
+        })
+    }
+})
+router.get('/delete2',function(req,res){
+    var a=localStorage.getItem('admin')
+    if(a){
+        pool.query('delete from assignment where(id=?)',[req.query.b],function(error,result){
+            console.log(error)
+            res.redirect('/assignment/studentdeatils')
+        })
+    }
+})
+router.get('/profile',function(req,res){
+    id1=req.query.a
+    try{
+    var id=cryptr.decrypt(id1)
+    pool.query('select u.*,(select count(s.order) from submmision s where studentid=u.id ) as number from user u where(id=?)',[id],function(error,result){
+        if(error){
+            console.log(error)
+            a="/assignment/?a="+id1
+            res.redirect(a)
+        }
+        else{
+
+             res.render('profile',{id:id1,data:result[0],s:true})
+        }
+        // pool.query('select assignmentid from submmision where studentid=?',[id],function(error,result1){
+            
+            
+        //     if(error){
+        //         console.log(error)
+        //         a="/assignment/?a="+id1
+        //         res.redirect(a)
+        //     }
+        //     else{
+        //         var a=result1.length
+        //         result[0]['number']=a
+        //         res.render('profile',{id:id1,data:result[0],s:true})
+        //     }})
+    })
+}
+        catch(e){
+            var a=localStorage.getItem('admin')
+            if(a){
+                pool.query('select u.*,(select count(s.order) from submmision s where s.studentid=u.id) as number from user u where(id=?)',[id1],function(error,result){
+            if(error){
+                console.log(error)
+                a="/adminprofile"
+                res.redirect(a)
+            }
+            else{
+                    res.render('profile',{id:id1,data:result[0],s:false})
+                }
+                    // pool.query('select assignmentid from submmision where studentid=?',[id1],function(error,result1){
+            // if(error){
+            //     console.log(error)
+            //     a="/adminprofile"
+            //     res.redirect(a)
+            // }
+            // else{
+            //     a=result1
+            //     result[0]['number']=a.length
+            //     res.render('profile',{id:id1,data:result[0],s:false})
+            // }})
+        })
+    }
+        else{
+            res.redirect('/assignment/Login')
+        }  
+    }
+    
+})
+// router.get('/assignment',function(req,res){
+//     try{
+//     pool.query('select * from assignment',function(error,result){
+//         if(error){
+//             a="/assignment/?a="+req.query.a
+//             res.redirect(a)
+//         }
+//         else{
+//             pool.query('select assignmentid from submmision where(studentid=?)',(cryptr.decrypt(req.query.a)),function(error,result1){
+//                 console.log(result1)    
+//                 res.render('assignment',{data:result,data1:result1})  
+//             })
+//         }
+//     })}
+//     catch(e){
+        
+//             res.redirect('/assignment/Login')
+        
+//     }
+// })
+router.get('/',function(req,res){
+    console.log(req.query)
+    try{
+        id=cryptr.decrypt(req.query.a)
+        pool.query('select s.*,(select a.faculty from assignment a where a.id=s.assignmentid) as faculty,(select b.enddate from assignment b where b.id=s.assignmentid) as enddate,(select c.picture from assignment c where c.id=s.assignmentid) as ass,(select d.name from assignment d where d.id=s.assignmentid) as name from submmision s where(s.studentid=?)',[id],function(error,result){
+            if(error){
+                console.log(error)
+                res.render('home',{id:undefined})
+            }
+            else{
+                res.render('home',{id:req.query.a,data:result});
+            }
+        })
+    }
+    catch(error){
+        console.log(error)
+        res.render('home',{id:undefined,name:undefined});
+    }
+})
+
+router.post('/signup',function(req,res){
+    var name=req.body.firstname+" "+req.body.lastname
+    var uid=(req.body.uid)
+    var branch=req.body.branch
+    var password=cryptr.encrypt(req.body.passworduser)
+    pool.query('insert into user (id, name, branch, password) values(?,?,?,?)',[uid,name,branch,password],function(error,result){
+        if(error){
+            console.log(error)
+            res.render('signup')
+        }
+        else{
+            var a='/assignment/?a='+cryptr.encrypt(uid)
+            res.redirect(a)
+        }
+    })
+})
+router.get('/adminlogin',function(req,res){
+    var t=req.query.t
+    if(t!=undefined){
+    var a=localStorage.getItem('admin')
+    if(a){
+        res.render('dashboard',{data:JSON.parse(a)})
+    }
+    else{
+        res.redirect('/assignment/Login')
+    }
+}
+else{
+    res.redirect('/assignment/Login')
+}
+})
+router.post('/login',function(req,res){
+    var id=req.body.uid
+    var pass=req.body.pass
+    pool.query('select * from admin where(id=? and password=?)',[id,pass],function(error,result){
+        if(error){
+            res.render('login',{status:false,msg:"Server Error.........."})
+        }
+        else if(result.length==1){
+            localStorage.setItem("admin",JSON.stringify(result[0]))
+            res.render('dashboard',{data:result[0]})
+        }
+        else{
+            pool.query('select * from user where(id=?)',[id],function(error,result){
+                if(error){
+                    res.render('login',{status:false,msg:"Server Error......"})
+                }
+                else if(result.length==0 || cryptr.decrypt(result[0]["password"])!=pass){
+                    res.render('login',{status:false,msg:"Invalid Scholar Id or Password"})
+                }
+                else{
+                    a="/assignment/?a="+cryptr.encrypt(id);
+                    res.redirect(a);
+                }
+            })}
+    })
+})
+router.get('/fetch',function(req,res){
+    var id=req.query.id
+    pool.query('select * from user where(id=?)',[id],function(error,result){
+        if(error){
+            res.status(500).json([])
+        }
+        else{
+            res.status(200).json(result)
+        }
+    })
+})
+router.get('/afetch',function(req,res){
+    var id=req.query.id
+    pool.query('select * from assignment where(id=?)',[id],function(error,result){
+        if(error){
+            res.status(500).json([])
+        }
+        else{
+            res.status(200).json(result)
+        }
+    })
+})
+router.get('/update',function(req,res){
+    var id=req.query.id
+    pool.query('update user set password=? where(id=?)',[cryptr.encrypt(req.query.pass),id],function(error,result){
+        if(error){
+            res.status(500).json([])
+        }
+        else{
+            res.status(200).json(result)
+        }
+    })
+})
+router.get('/addassignment',function(req,res){
+    var a=JSON.parse(localStorage.getItem('admin'))
+    if(a){
+    res.render('addassignment',{s:true,aname:a.name});}
+    else{
+        res.redirect('/assignment/Login')
+    }
+})
+router.post('/add',upload.single('paper'),function(req,res){
+
+    var admin=JSON.parse(localStorage.getItem('admin'))
+    if(admin){
+    var a=req.file.originalname
+file=req.file.filename
+a=a.split('.')
+console.log(a)
+if((a[a.length-1])=="pdf"){
+    id=req.body.id
+    aname=req.body.aname
+    fname=req.body.fname
+    enddate=req.body.enddate
+    // file=req.file.filename
+    pool.query('insert into assignment (id, name, enddate, picture, faculty) values(?,?,?,?,?)',[id,aname,enddate,file,fname],function(error,result){
+        if(error){
+            var a="./public/images/"+file
+            fs.unlinkSync(a)
+            res.render('addassignment',{s:false,msg:"Server Error......",aname:admin.name});
+        }
+        else{
+            var a='/assignment/adminlogin?t='+cryptr.encrypt('admin')
+            res.redirect(a)
+        }
+    })
+}
+else{
+    var a="./public/images/"+file
+    fs.unlinkSync(a)
+    res.render('addassignment',{s:false,msg:"Invalid File Format",aname:admin.name});
+}}
+else{
+    res.redirect('/assignment/Login')
+}
+})
+router.get('/submitassignment',function(req,res){
+    var id=cryptr.decrypt(req.query.a)
+    var id1=(req.query.a)
+    pool.query('select * from assignment where id not in (select assignmentid from submmision where studentid=?)',[id],function(error,result){
+        if(error){
+            console.log(error)
+        }
+        else{
+        res.render('submitassignment',{data:result,id:id1})}
+        // if(error){
+        //     console.log(error)
+        // }
+        // else{
+        //     pool.query('select * from assignment',function(error,result){
+        //         if(error){
+        //             console.log(error)
+        //         }
+        //         else{
+        //             p=[]
+        //             result.map(function(item,index){
+        //                 x=result1.find(function(item1,index){
+        //                     if(item1.assignmentid==item.id){
+        //                         return true
+        //                     }
+        //                 })
+        //                 if(x==undefined){
+        //                     p.push(item)
+        //                 }
+        //             })
+        //         res.render('submitassignment',{data:p,id:id1})
+        //         }
+        //     })
+        // }
+    })
+})
+router.post('/upload',upload.single('paper'),function(req,res){
+var a=req.file.originalname
+file=req.file.filename
+a=a.split('.')
+console.log(a)
+if((a[1])=="pdf"){
+    id=req.body.id
+    aid=req.body.aid
+        d=new Date()
+        pool.query('insert into submmision (studentid, assignmentid, dateofsubmmision, picture) values(?,?,?,?)',[cryptr.decrypt(id),aid,d,file],function(error,result){
+        if(error){
+            var a="./public/images/"+file
+            fs.unlinkSync(a)
+            a="/assignment/submitassignment?a="+id
+            res.redirect(a)
+        }
+        else{
+            a="/assignment/submitassignment?a="+id
+            res.redirect(a)
+        }
+    })
+}
+else{
+    var a="./public/images/"+file
+    fs.unlinkSync(a)
+    a="/assignment/submitassignment?a="+id
+    res.redirect(a)
+}
+})
+router.get('/updateassignment',function(req,res){
+    var a=localStorage.getItem('admin')
+    if(a){
+    pool.query('select * from assignment where id=?',[req.query.b],function(error,result){
+        if(error){
+            console.log(error)
+        }
+        else{
+            res.render('updateassignment',{data:result[0],s:true})
+        }
+    })}
+    else{
+        res.redirect('/assignment/Login')
+    }
+})
+router.post('/updatea',function(req,res){
+    a=localStorage.getItem('admin')
+    if(a){
+    var aname=req.body.aname
+    var id=req.body.id
+    var fname=req.body.fname
+    var enddate=req.body.enddate
+    var pid=req.body.pid
+    var pic=req.body.pic
+    var btn=req.body.btn
+    if(btn=="Update"){
+        pool.query('update assignment set id=?,name=?,faculty=?,enddate=? where( id=?)',[id,aname,fname,enddate,pid],function(error,result){
+            if(error){
+                console.log(error)
+            }
+            else{
+                res.redirect("/assignment/assignmentdetails")
+            }
+        })
+    }
+    else{
+        pool.query('delete from assignment where id=?',[pid],function(error,result){
+            if(error){
+                console.log(error)
+            }
+            else{
+                a="./public/images/"+pic
+                fs.unlinkSync(a)
+                res.redirect("/assignment/assignmentdetails")
+            }
+        })
+    }}
+    else{
+        res.redirect('/assignment/Login')
+    }
+})
+router.get('/updateimage',function(req,res){
+    a=localStorage.getItem('admin')
+    if(a){
+    var b=req.query.b
+    res.render('updateimage',{id:b,p:req.query.p,s:true})
+}
+else{
+    res.redirect('/assignment/Login')
+}
+})
+router.post('/updatepdf',upload.single('paper'),function(req,res){
+    a=localStorage.getItem('admin')
+    if(a){
+    var id=req.body.id
+    var pic=req.body.pic
+var a=req.file.originalname
+file=req.file.filename
+if((a.split('.')[1])=="pdf"){
+    pool.query('update assignment set picture=? where id=?',[req.file.filename,id],function(error,result){
+        if(error){
+            var a="./public/images/"+file
+            fs.unlinkSync(a)
+            res.render('updateimage',{id:id,p:pic,s:false,msg:"Server Error......"})
+            console.log(error)
+        }
+        else{
+            a="./public/images/"+pic
+            if(pic!=req.file.filename){
+            fs.unlinkSync(a)}
+            a="/assignment/assignmentdetails"
+            res.redirect(a)
+        }
+    })
+}
+else{
+    var a="./public/images/"+file
+    fs.unlinkSync(a)
+    res.render('updateimage',{id:id,p:pic,s:false,msg:"Invalid File Format"})
+    
+}}
+else{
+    res.redirect('/assignment/Login')
+}
+})
+module.exports=router;

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+  	<title>Student Record</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+	<link href='https://fonts.googleapis.com/css?family=Roboto:400,100,300,700' rel='stylesheet' type='text/css'>
+
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	
+	<link rel="stylesheet" href="/table/css/style.css">
+
+	</head>
+	<body>
+	<section class="ftco-section">
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-md-6 text-center mb-4">
+					<h2 class="heading-section">Students Record</h2>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-12">
+					<div class="table-wrap">
+						<table class="table">
+						  <thead class="thead-primary">
+						    <tr>
+						    	<th>Name</th>
+						      <th>Scholar Id</th>
+						      <th>Branch</th>
+						      <th>Number of Assignment Submitted</th>
+						      <th>Delete</th>
+						    </tr>
+						  </thead>
+						  <tbody>
+							  <% data.map((item,index)=>{%>
+							  <tr class="alert" role="alert">
+							  <td>
+						      	<div >
+						      		<a href="/assignment/profile?a=<%=item.id%>"><span><%=item.name%> </span></a>
+						      	</div>
+						      </td>
+						      <td><%=item.id%></td>
+						      <td >
+					        	<div>
+				             	<span><%=item.branch%></span>
+				          	</div>
+				          </td>
+                          
+				          <td><%=item.number%></td>
+						      <td>
+						      	<a href="/assignment/delete?b=<%=item.id%>">
+				            	<span aria-hidden="true"><i class="fa fa-close"></i></span>
+                                  </a>
+				        	</td>
+						    </tr>
+                        <%})%>
+						  </tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<script src="/table/js/jquery.min.js"></script>
+  <script src="/table/js/popper.js"></script>
+  <script src="/table/js/bootstrap.min.js"></script>
+  <script src="/table/js/main.js"></script>
+
+	</body>
+</html>
+
